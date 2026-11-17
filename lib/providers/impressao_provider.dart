@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../repositories/impressao_repository.dart';
 
+// Provider: guarda o estado, aplica regras e avisa a tela com notifyListeners.
 class ImpressaoProvider extends ChangeNotifier {
   final ImpressaoRepository repository;
   ImpressaoProvider(this.repository);
@@ -18,26 +19,33 @@ class ImpressaoProvider extends ChangeNotifier {
   String? get mensagem => _mensagem;
   int get totalDocumentos => _documentos.length;
 
+  // Retorna uma lista derivada; a lista completa é mantida para o resumo.
   List<Map<String, Object?>> get documentosVisiveis =>
-      _documentos.where(_mostrar).toList();
+    _documentos.where(_mostrar).toList();
 
-  bool _mostrar(Map<String, Object?> documento) {
-    final impresso = documento['impresso'] as int;
-    if (_filtro == 'Pendentes') return impresso == 0;
-    if (_filtro == 'Impressos') return impresso == 1;
-    return true;
+bool _mostrar(Map<String, Object?> documento) {
+  final impresso = documento['impresso'] as int;
+
+  if (_filtro == 'Pendentes') {
+    return impresso == 0;
   }
 
-  int folhasDoDocumento(Map<String, Object?> documento) {
-    final paginas = documento['paginas'] as int;
-    final copias = documento['copias'] as int;
-    return paginas * copias;
+  if (_filtro == 'Impressos') {
+    return impresso == 1;
   }
 
-  int get totalFolhas => _documentos.fold<int>(
-      0,
-      (soma, documento) =>
-          soma + (documento['paginas'] as int) * (documento['copias'] as int));
+  return true;
+}
+
+int folhasDoDocumento(Map<String, Object?> documento) {
+  final paginas = documento['paginas'] as int;
+  final copias = documento['copias'] as int;
+
+  return paginas * copias;
+}
+
+  int get totalFolhas => _documentos.fold<int>(0, (soma, documento) =>
+    soma + (documento['paginas'] as int) * (documento['copias'] as int));
 
   void alterarFiltro(String valor) {
     _filtro = valor;
@@ -45,13 +53,11 @@ class ImpressaoProvider extends ChangeNotifier {
   }
 
   String? validar(String nome, int? paginas, int? copias) {
-    if (nome.trim().isEmpty) return 'Preencha o nome do documento.';
-    if (paginas == null || copias == null) return 'Informe números inteiros.';
-    if (paginas <= 0 || copias <= 0) {
-      return 'Páginas e cópias devem ser maiores que zero.';
-    }
-    return null;
-  }
+  if (nome.trim().isEmpty) return 'Preencha o nome do documento.';
+  if (paginas == null || copias == null) return 'Informe números inteiros.';
+  if (paginas <= 0 || copias <= 0) return 'Páginas e cópias devem ser maiores que zero.';
+  return null;
+}
 
   Future<void> _atualizarDados() async {
     _documentos = await repository.listar();
@@ -67,11 +73,8 @@ class ImpressaoProvider extends ChangeNotifier {
 
   Future<bool> recarregar() => _executar(_atualizarDados);
 
-  Future<bool> salvar(
-      {int? id,
-      required String nome,
-      required String paginasTexto,
-      required String copiasTexto}) async {
+  Future<bool> salvar({int? id, required String nome,
+    required String paginasTexto, required String copiasTexto}) async {
     final paginas = int.tryParse(paginasTexto.trim());
     final copias = int.tryParse(copiasTexto.trim());
     final erro = validar(nome, paginas, copias);
@@ -81,27 +84,27 @@ class ImpressaoProvider extends ChangeNotifier {
       return false;
     }
     return _executar(() async {
-      await repository.salvar(
-          id: id, nome: nome, paginas: paginas!, copias: copias!);
+      await repository.salvar(id: id, nome: nome,
+        paginas: paginas!, copias: copias!);
       await _atualizarDados();
     });
   }
 
   Future<bool> alternar(Map<String, Object?> documento) => _executar(() async {
-        await repository.alternarImpressao(
-            documento['id'] as int, documento['impresso'] == 1);
-        await _atualizarDados();
-      });
+    await repository.alternarImpressao(
+      documento['id'] as int, documento['impresso'] == 1);
+    await _atualizarDados();
+  });
 
   Future<bool> excluir(int id) => _executar(() async {
-        await repository.excluir(id);
-        await _atualizarDados();
-      });
+    await repository.excluir(id);
+    await _atualizarDados();
+  });
 
   Future<bool> restaurar() => _executar(() async {
-        await repository.restaurarAmostras();
-        await _atualizarDados();
-      });
+    await repository.restaurarAmostras();
+    await _atualizarDados();
+  });
 
   Future<bool> _executar(Future<void> Function() operacao) async {
     if (_carregando) return false;

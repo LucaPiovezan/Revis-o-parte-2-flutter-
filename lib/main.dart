@@ -1,5 +1,3 @@
-import 'package:device_preview/device_preview.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'pages/impressao_page.dart';
@@ -9,28 +7,21 @@ import 'services/database_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(DevicePreview(
-    enabled: kIsWeb,
-    builder: (context) => ChangeNotifierProvider(
-      create: (_) => ImpressaoProvider(
-        ImpressaoRepository(DatabaseService()),
-      )..iniciar(),
-      child: const ImpressaoApp(),
-    ),
+  runApp(ChangeNotifierProvider(
+    // Monta as dependências e inicia a consulta antes de apresentar os dados.
+    create: (_) => ImpressaoProvider(
+      ImpressaoRepository(DatabaseService()))..iniciar(),
+    child: const ImpressaoApp(),
   ));
 }
 
 class ImpressaoApp extends StatelessWidget {
   const ImpressaoApp({super.key});
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Fila de impressão',
-      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.indigo),
-      locale: DevicePreview.locale(context),
-      builder: DevicePreview.appBuilder,
-      home: const ImpressaoPage(),
-    );
-  }
+  Widget build(BuildContext context) => MaterialApp(
+    debugShowCheckedModeBanner: false,
+    title: 'Fila de impressão',
+    theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.indigo),
+    home: const ImpressaoPage(),
+  );
 }
